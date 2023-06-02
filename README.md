@@ -23,8 +23,8 @@
 
 
 
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
+<br><br><br>
+<br><br><br>
 <center>
 <img src="images/qiime2.svg" width=550 />
 </center>
@@ -38,8 +38,8 @@ This tutorial is designed for users wanting to run Qiime2 on the INBRE WildIris 
 
 This is a modification of a general tutorial I put together [here](https://github.com/seanharrington256/boise_qiime_2022) that is not specific to WildIris.
 
-<br><br><br><br><br><br>
-<br><br><br><br><br><br>
+<br><br><br>
+<br><br><br>
 
 
 QIIME2 is a pipeline for metabarcoding analysis described in [this paper](https://www.nature.com/articles/s41587-019-0209-9). It is a piece of software that wraps around several other programs via "plugins" in QIIME2 lingo. For example, in the error correction or "denoising" step, one option is to use the `dada2` plugin to run [DADA2](https://benjjneb.github.io/dada2/). DADA2 is incorporated into the QIIME2 pipeline, but is not developed or maintained by the same group that develops and maintains QIIME2. Users can develop their own plugins and contribute them to the QIIME2 pipeline to extend functionality as new methods are developed.
@@ -111,6 +111,7 @@ Your path to this directory will be different than mine, so keep track of where 
 ```bash
 cd qiime_tutorial
 mkdir scripts
+mkdir scripts/errs_outs # within scripts, make a directory to put err/out files into
 mkdir raw_data
 ```
 
@@ -152,32 +153,88 @@ Now we can import the data and prepare it for analysis in QIIME2. As touched on 
 * As mentioned above, you will need to run QIIME2 from within an interactive session or by submitting jobs with a SLURM script. I'll demonstrate both here for the data import step, but then will mostly run through these steps in an interactive session, with exceptions for longer steps. 
 
 ```
-salloc
+salloc -A YOURPROJECT -t 0-03:00 --mem=10G --cpus-per-task=2
 ```
 
 * Note that running `salloc` sessions and typing commands directly into the console can be convenient for small datasets, but you should be keeping a record of the commands you type somewhere. A huge advantage of using slurm scripts, even for short jobs is that you have a file that records the exact commmands you ran. In my own analyses, I use slurm scripts for all but the shortest, simplest tasks.
 
+* The `-A` option in the `salloc` command or in slurm scripts specifies which project to use, you will need your own project for this.
+
+
+Once you are on a worker node, you can then run the command to import data into QIIME2 format:
 
 
 ```bash
+module load qiime2/2023.5   # we need to load the module on the worker node now
+
 qiime tools import \
    --type EMPPairedEndSequences \
    --input-path emp-paired-end-sequences \
-   --output-path emp-paired-end-sequences.qza
+   --output-path ../emp-paired-end-sequences.qza
 ```
 
-
 This creates a QIIME2 file called an artifact. QIIME2 uses two file formats, "QIIME zipped artifacts" or ".qza" files and "QIIME zipped visualizations" or ".qzv" files. Both are just zip files with different names. qza files contain data and provenance (information about what has been done to the data) while qzv files, which we'll see shortly, contain visualizations, as the name suggests.
+
+Because of the way that I have specified the output path, this file will be created in the `qiime_tutorial` directory, one level above where we are now. This keeps up from confusing our outputs with our raw data.
+
+
+<br>
+
+Alternately, submitting this as a batch job can be done by writing a slurm script, which I've titled `import.slurm`:
+
+I would first move into my scripts directory and create this script there. 
+
+```bash
+cd ../scripts
+```
+
+Then create this script there, however you prefer (`vim`, `nano`, using a text editor with CyberDuck).
+
+```bash
+#!/bin/bash
+
+#SBATCH --job-name import   # give the job a name
+#SBATCH -A YOURPROJECT    # specify the account
+#SBATCH -t 0-01:00		 # how much time? this is 1 hour
+#SBATCH --nodes=1			# how many nodes?
+#SBATCH --cpus-per-task=1	# 1 cores
+#SBATCH --mem=10G			# 10 GB memory
+#SBATCH --mail-type=ALL		# Send emails on start, fail, completion
+#SBATCH --mail-user=USERNAME@gmail.com   # specify your email
+#SBATCH -e errs_outs/err_import_%A.err		# name error files and include job ID (%A)
+#SBATCH -o errs_outs/std_import_%A.out		# name  out files and include job ID (%A)
+
+# Load any necessary modules 
+module load qiime2/2023.5
+
+# set the working directory as appropriate
+cd YOUR_PATH_TO/qiime_tutorial/raw_data # Edit this to your path
+
+# Run the desired commands
+qiime tools import \
+   --type EMPPairedEndSequences \
+   --input-path emp-paired-end-sequences \
+   --output-path ../emp-paired-end-sequences.qza
+```
+
+* You could include multiple steps into a single script if desired.
+
+Submit the job:
+
+```bash
+sbatch import.slurm
+```
+
 
 <br><br>
 
 ### 3.1 Demultiplexing
 
-We now need to demultiplex the sequences, which sorts the reads into samples based on barcodes added in the library preparation.
+We now need to demultiplex the sequences, which sorts the reads into samples based on barcodes added in the library preparation. As stated above, I'm going to do most of this on the command line from within my interactive session here, but you could make all of these steps run from slurm scripts, and with larger datasets, that is probably desirable.
 
 ```bash
 qiime demux emp-paired \
-  --m-barcodes-file sample-metadata.tsv \
+  --m-barcodes-file raw_data/sample-metadata.tsv \
   --m-barcodes-column barcode-sequence \
   --p-rev-comp-mapping-barcodes \
   --i-seqs emp-paired-end-sequences.qza \
@@ -203,7 +260,11 @@ qiime demux summarize \
 ```
 
 
-Before we go any further, let's do a quick exploration of a .qza file. We can use [https://view.qiime2.org/](https://view.qiime2.org/) to examine these. Bring the `demux-subsample.qza` file into that website. It will start in the details tab, where you can see information about the format as well as citations. You can see that even just for demultiplexing, there are already three citations. These should all go into your methods section, along with a detailed description of the specific commands, plugins, and arguments that you used to run your analyses and process your data: "we demultiplexed the data using QIIME2" is not adequate for anyone to reproduce your results. The QIIME2 documentation has excellent examples of good and bad description of QIIME2 methods sections [here](https://docs.qiime2.org/2022.2/citation/).
+Before we go any further, let's do a quick exploration of a .qza file. We can use [https://view.qiime2.org/](https://view.qiime2.org/) to examine these. 
+
+* You will need to download these files locally first. You can use CyberDuck, `scp`, `rsync` or whatever you prefer. These are documented in the WildIris intro I have linked above if you are not familiar with these commands/programs.
+ 
+Bring the `demux-subsample.qza` file into that website. It will start in the details tab, where you can see information about the format as well as citations. You can see that even just for demultiplexing, there are already three citations. These should all go into your methods section, along with a detailed description of the specific commands, plugins, and arguments that you used to run your analyses and process your data: "we demultiplexed the data using QIIME2" is not adequate for anyone to reproduce your results. The QIIME2 documentation has excellent examples of good and bad description of QIIME2 methods sections [here](https://docs.qiime2.org/2022.2/citation/).
 
 You can also click on the "provenance" tab to see what manipulations have been done to your data. You should see something like this:
 
@@ -212,11 +273,7 @@ You can also click on the "provenance" tab to see what manipulations have been d
 </center>
 
 
-This tells us important information, but isn't very interesting from a scientific perspective of trying to learn about the data and make inferences. Visualiztion (qzv) files are much more intersting for these purposes. We can use a terminal command to view visualization files:
-
-```bash
-qiime tools view demux-subsample.qzv
-```
+This tells us important information, but isn't very interesting from a scientific perspective of trying to learn about the data and make inferences. Visualiztion (qzv) files are much more intersting for these purposes. We can download the `demux-subsample.qzv` and bring it into that website.
 
 The `Overview` tab shows some general stats on how many reads we have per sample. From looking at the histograms, we see that a lot of samples have very few reads. If we scroll down to look at the table, we see that we have a lot of samples that have fewer than 100 reads in them. 
 
@@ -243,15 +300,15 @@ qiime demux filter-samples \
   --o-filtered-demux demux.qza
 ```
 
+
 <br><br>
 
 ### 3.2 Denoising
 
-Our next step is to "denoise", or error correct, the data. This is an important step in the analysis of metabarcoding data because the units of analysis are unique sequences, presumed to be from unique organisms. However, all sequencers encounter sequencing errors, which produce sequences that are slightly different from the true sequence. We will use DADA2 (via the dada2 plugin) to error correct our data--this is a complex process, and you can read more about it [here](https://www.nature.com/articles/nmeth.3869)--this is not the only option for error correction in QIIME2. This step will also include some trimming of our reads and will merge the forward and reverse reads. To determine some of our trimming paramters, let's go back to our demultiplexed visualization and look in the `Interactive Quality Plot` tab
+Our next step is to "denoise", or error correct, the data. This is an important step in the analysis of metabarcoding data because the units of analysis are unique sequences, presumed to be from unique organisms. However, all sequencers encounter sequencing errors, which produce sequences that are slightly different from the true sequence. We will use DADA2 (via the dada2 plugin) to error correct our data--this is a complex process, and you can read more about it [here](https://www.nature.com/articles/nmeth.3869)--this is not the only option for error correction in QIIME2. This step will also include some trimming of our reads and will merge the forward and reverse reads. 
 
-```bash
-qiime tools view demux-subsample.qzv
-```
+To determine some of our trimming paramters, let's look back at our visualization `demux-subsample.qzv` and look in the `Interactive Quality Plot` tab at [https://view.qiime2.org/](https://view.qiime2.org/).
+
 
 You should see something like this:
 
