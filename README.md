@@ -316,11 +316,38 @@ You should see something like this:
 <img src="images/base_qual.png" width=600 />
 </center>
 
+You can hover your mouse over the plot to get information about specific positions along the reads.
 
 We have 150 bp paired-end reads, and quality is reasonably high throughout, but we can see that the first ~13 bp of both forward and reverse reads is a little low, so we'll trim those out. We'll also truncate reads in both directions to 150 bp, since none should be longer than this. Note that we have set these the same for forward and reverse reads, but that is not necessary.
 
 
+As a reminder that we can do any and all of these steps in a slurm script, I'll use one for this step. Also remember that this can be good practice because it inherently keeps a record of your commands. We will also include a few other commands to make summaries of the output and demonstrate including multiple commands into a single script.
+
+
+In your `scripts` directory, create a script called `denoise.slurm` containing the following (replace the account, email, and file paths with your own):
+
 ```bash
+#!/bin/bash
+
+#SBATCH --job-name denoise   # give the job a name
+#SBATCH -A YOURPROJECT    # specify the account
+#SBATCH -t 0-01:00		 # how much time? this is 1 hour
+#SBATCH --nodes=1			# how many nodes?
+#SBATCH --cpus-per-task=1	# 1 cores
+#SBATCH --mem=10G			# 10 GB memory
+#SBATCH --mail-type=ALL		# Send emails on start, fail, completion
+#SBATCH --mail-user=USERNAME@gmail.com   # specify your email
+#SBATCH -e errs_outs/err_denoise_%A.err		# name error files and include job ID (%A)
+#SBATCH -o errs_outs/std_denoise_%A.out		# name  out files and include job ID (%A)
+
+# Load any necessary modules 
+module load qiime2/2023.5
+
+# set the working directory as appropriate
+cd YOUR_PATH_TO/qiime_tutorial/ # Edit this to your path
+
+# Run the denoising command:
+
 qiime dada2 denoise-paired \
   --i-demultiplexed-seqs demux.qza \
   --p-trim-left-f 13 \
@@ -330,15 +357,13 @@ qiime dada2 denoise-paired \
   --o-table table.qza \
   --o-representative-sequences rep-seqs.qza \
   --o-denoising-stats denoising-stats.qza
-```
+  
 
-Let's generate a few summaries of this ouput:
-
-```bash
+# make some summaries:
 qiime feature-table summarize \
   --i-table table.qza \
   --o-visualization table.qzv \
-  --m-sample-metadata-file sample-metadata.tsv
+  --m-sample-metadata-file raw_data/sample-metadata.tsv
 
 qiime feature-table tabulate-seqs \
   --i-data rep-seqs.qza \
@@ -346,10 +371,18 @@ qiime feature-table tabulate-seqs \
 
 qiime metadata tabulate \
   --m-input-file denoising-stats.qza \
-  --o-visualization denoising-stats.qzv
+  --o-visualization denoising-stats.qzv  
 ```
 
-Then use `qiime tools view` as we did above on each of these three visualizations (`table.qzv`, `rep-seqs.qzv`, `denoising-stats.qzv`) to explore them.
+
+Submit the job:
+
+```bash
+sbatch denoise.slurm
+```
+
+
+Then download each of these three visualizations (`table.qzv`, `rep-seqs.qzv`, `denoising-stats.qzv`) and take them to [https://view.qiime2.org/](https://view.qiime2.org/) to explore them.
 
 
 
@@ -364,6 +397,8 @@ Now that we have the data fully read in and processed, we can start to do some a
 
 Many of these metrics include phylogenetic distance in their calculation, and to do that, we need a tree. We'll start by making one. We'll use the `phylogeny` plugin to use the [MAFFT](https://mafft.cbrc.jp/alignment/software/) program for sequence alignment, followed by phylogenetic analysis in the program [FastTree](http://www.microbesonline.org/fasttree/). As for many of the methods in QIIME2, these are external programs that are being called by the QIIME2 pipeline. There are multiple other options that you can explore using `--help`.
 
+I'm going to shift back to just running this interactively in my `salloc` session that has the qiime2 module loaded:
+
 ```bash
 qiime phylogeny align-to-tree-mafft-fasttree \
   --i-sequences rep-seqs.qza \
@@ -376,11 +411,11 @@ qiime phylogeny align-to-tree-mafft-fasttree \
 
 Next, we can start to calculate some diversity metrics. We have to specify a minimum sampling depth (`--p-sampling-depth`) for these calculations. This threshold is important: any samples with more than the specified depth will be randomly sampled to contain only that many features, whereas samples with fewer features will be discarded from analysis. 
 
-This is necessary because using different numbers of features across samples can bias estimates of diversity. There is no easy rule for selecting this threshold, other than that we want to try to select a threshold that maximizes the number of features without dropping out too many samples. Let's look at the *Interactive Sample Detail* section of `table.qzv` to help us figure out what threshold to use.
+This is necessary because using different numbers of features across samples can bias estimates of diversity. There is no easy rule for selecting this threshold, other than that we want to try to select a threshold that maximizes the number of features without dropping out too many samples. 
 
-```bash
-qiime tools view table.qzv
-```
+Let's look at the *Interactive Sample Detail* section of `table.qzv` to help us figure out what threshold to use. Download that visualization file and bring it into the qiime2view website.
+
+
 
 In this document, click on the *Interactive Sample Detail*  tab up top. As you move the *Sampling Depth* slider around you can see a visual representation of how many samples will be retained. You can also scroll down the table to see if there is a point at which there is a sharp decline in the Feature Counts, the value just prior to such a drop off can be good to use.
 
@@ -395,22 +430,19 @@ Once we've selected a good sampling depth, we can calculate our diversity metric
 qiime diversity core-metrics-phylogenetic \
   --i-phylogeny rooted-tree.qza \
   --i-table table.qza \
-  --p-sampling-depth 733 \
-  --m-metadata-file sample-metadata.tsv \
+  --p-sampling-depth 689 \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --output-dir core-metrics-results
 ```
 
-**Note that the 733 I used here may not be exactly what you want to use.** When we subsampled reads at the beginning to reduce computation time, we did so randomly, so everyone will have slightly different datasets containing different reads. This will affect any specific values used throughout this tutorial.
+**Note that the 689 I used here may not be exactly what you want to use.** When we subsampled reads at the beginning to reduce computation time, we did so randomly, so everyone will have slightly different datasets containing different reads. This will affect any specific values used throughout this tutorial.
 
 This generates a lot of output that is worth looking through, take a look at all of the artifacts and visualizations that were created: `ls core-metrics-results`.
 
-For each of the beta diversity metrics, a principal coordinates analysis (PCoA) plot was generated using Emperor. Let's take a look at one of them:
+For each of the beta diversity metrics, a principal coordinates analysis (PCoA) plot was generated using Emperor. Let's take a look at this file on the qiime2view website: `core-metrics-results/bray_curtis_emperor.qzv`
 
-```bash
-qiime tools view core-metrics-results/bray_curtis_emperor.qzv
-```
 
-For continuous variables, try selecting a color scheme from the sequential or diverging sets of colors, these should make it easier to identify trends.
+You can color the points by values of different variables. For continuous variables, try selecting a color scheme from the sequential or diverging sets of colors, these should make it easier to identify trends.
 
 Are there any particular variables that seem to be strongly associated with beta diversity?
 
@@ -418,7 +450,7 @@ Are there any particular variables that seem to be strongly associated with beta
 
 ### 4.1 Categorical tests
 
-Now that we have computed the diversity metrics and done some qualitative exploration of the emperor plots, we can explicitly test for associations between these diversity metrics and the sample metadata. We can test for differences among categorical groups (e.g., using the `vegetation` column, which is yes/no) or correlations with continuous variables, such as `percentcover`. 
+Now that we have computed the diversity metrics and done some qualitative exploration of the emperor plots, we can explicitly test for associations between these diversity metrics and the sample metadata. We can test for differences among categorical groups (e.g., using the `vegetation` column, which is yes/no) or correlations with continuous variables, such as `percentcover`.
 
 Let's start with categorical tests using the evenness and Faith Phylogenetic Diversity metrics. 
 
@@ -426,23 +458,27 @@ Let's start with categorical tests using the evenness and Faith Phylogenetic Div
 ```bash
 qiime diversity alpha-group-significance \
   --i-alpha-diversity core-metrics-results/evenness_vector.qza \
-  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --o-visualization core-metrics-results/evenness-group-significance.qzv
   
 
 qiime diversity alpha-group-significance \
   --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
-  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --o-visualization core-metrics-results/faith-pd-group-significance.qzv  
 ```
 
-Take a look at these results:
+Take a look at these resulting files:
 
-```bash
-qiime tools view core-metrics-results/evenness-group-significance.qzv
-
-qiime tools view core-metrics-results/faith-pd-group-significance.qzv
 ```
+core-metrics-results/evenness-group-significance.qzv
+
+core-metrics-results/faith-pd-group-significance.qzv
+```
+
+Just below `Alpha Diversity Boxplots` you should see a dropdown box labeled "Column", use this to select a variable to view results from.
+
+
 
 What associations are statistically significant?
 
@@ -453,17 +489,14 @@ Now let's look at how beta diversity composition varies across categorical varia
 ```bash
 qiime diversity beta-group-significance \
   --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \
-  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --m-metadata-column vegetation \
   --o-visualization core-metrics-results/unweighted-unifrac-vegetation-significance.qzv \
   --p-pairwise
 ```
 
-Take a look:
+Take a look at `core-metrics-results/unweighted-unifrac-vegetation-significance.qzv`
 
-```bash
-qiime tools view core-metrics-results/unweighted-unifrac-vegetation-significance.qzv
-```
 
 
 <center>
@@ -482,17 +515,14 @@ We can also make correlations between diversity and continuous variables from th
 ```bash
 qiime diversity alpha-correlation \
 	--i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
-	--m-metadata-file sample-metadata.tsv \
+	--m-metadata-file raw_data/sample-metadata.tsv \
 	--p-method spearman \
-	--o-visualization core-metrics-results/faith-pd-correlation.qzv  
+	--o-visualization core-metrics-results/faith-pd-correlation.qzv
 ```
 
 
-View it:
+View the file `core-metrics-results/faith-pd-correlation.qzv`
 
-```bash
-qiime tools view core-metrics-results/faith-pd-correlation.qzv
-```
 
 What relationships are significant? Note that we can also run this correlation using evenness or with a Pearson correlation test instead of Spearman.
 
@@ -504,7 +534,7 @@ To do this, we need to first calculate a distance matrix from the column of inte
 
 ```bash
 qiime metadata distance-matrix \
-	--m-metadata-file sample-metadata.tsv \
+	--m-metadata-file raw_data/sample-metadata.tsv \
 	--m-metadata-column elevation \
 	--o-distance-matrix core-metrics-results/elevation-dist-mat.qza
 ```
@@ -524,14 +554,10 @@ qiime diversity mantel \
 	--o-visualization core-metrics-results/unweight_unifrac_elevation_mantel.qzv
 ```
 
-View the resulting visualization:
+View the resulting visualization `core-metrics-results/unweight_unifrac_elevation_mantel.qzv`
 
 
-```bash
-qiime tools view core-metrics-results/unweight_unifrac_elevation_mantel.qzv
-```
-
-You'll see a warning that 27 IDs weren't shared between your distance matrices. This is because early on we filtered out some samples, then further filtered samples for sampling depth during the calculation of diversity metrics, whereas the metadata contains all samples. This mismatch is why we need to include the `--p-intersect-ids` flag here to tell the analysis to only include samples in both distance matrices that we input.
+You'll see a warning that there were some number of IDs weren't shared between your distance matrices. This is because early on we filtered out some samples, then further filtered samples for sampling depth during the calculation of diversity metrics, whereas the metadata contains all samples. This mismatch is why we need to include the `--p-intersect-ids` flag here to tell the analysis to only include samples in both distance matrices that we input.
 
 
 We could alternately use the `qiime diversity bioenv` method in a similar way to test for relationships between continuous variables and beta diversity metrics, but we won't explore it here. You can run `qiime diversity mantel --help` for more info on this. 
@@ -549,26 +575,22 @@ qiime diversity alpha-rarefaction \
   --i-table table.qza \
   --i-phylogeny rooted-tree.qza \
   --p-max-depth 1175 \
-  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --o-visualization alpha-rarefaction.qzv
 ```
 
 
-The parameter `--p-max-depth` should be chosen from the information in `table.qzv` that we generated previously. Using roughly the median frequency is generally recommended, but you may want to increase the value if your rarefaction plot does not level out or decrease it if you are losing many of your samples at this depth. We've chosen the median above, let's see how it looks:
+The parameter `--p-max-depth` should be chosen from the information in `table.qzv` that we generated previously. Using roughly the median frequency is generally recommended, but you may want to increase the value if your rarefaction plot does not level out or decrease it if you are losing many of your samples at this depth. We've chosen the median above, let's see how it looks, again downloading this file and putting it in the qiime2view site: `alpha-rarefaction.qzv`
 
 
-```bash
-qiime tools view alpha-rarefaction.qzv
-```
 
-
-The top plot shows us how much diversity we detect at varying sequencing depths. We should specifically check the value that we used for `--p-sampling-depth` when calculating diversity metrics looks good.
+The top plot shows us how much diversity we detect at varying sequencing depths. We should specifically check that the value that we used for `--p-sampling-depth` when calculating diversity metrics looks good.
 
 If the plot has leveled off, we can be reasonably confident that we are accurately characterizing the diversity in our samples. If the plots do not level off, that suggests that further sequencing may be needed to detect additional features in the samples and accurately characterize diversity.
 
 How does this plot look to you? Do you think that the sequencing depth is adequate?
 
-The bottom plot shows the number of samples that remain in each category when grouping by metadata columns. This is important to look at because if the diversity metric in the top plot is calculated from very few samples at a given sampling depth, that estimate of diversity may be unreliable. In fact, if you look at Shannon diversity for vegetation, you can see that at the highest sequencing depth, the number of samples drops low and so does the Shannon index.
+The bottom plot shows the number of samples that remain in each category when grouping by metadata columns (select which to look at in the dropdown box above the top plot). This is important to look at because if the diversity metric in the top plot is calculated from very few samples at a given sampling depth, that estimate of diversity may be unreliable. In fact, if you look at Shannon diversity for vegetation, you can see that at the highest sequencing depth, the number of samples drops low.
 
 <center>
 <img src="images/shannon_rarefac.png" width=600 />
@@ -581,49 +603,18 @@ The bottom plot shows the number of samples that remain in each category when gr
 ## 5. Taxonomic analysis
 
 
-Next up, we'll start to explore the taxonomic composition of our samples. We will start by training a taxonomic classifier. We don't have time to get into how this works, but you can read all about it [here](https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-018-0470-z). There are several existing, pre-trained classifiers that exist for QIIME2, but the developers recommend training your own classifier, as they perform best when tailored to your specific data.
+Next up, we'll start to explore the taxonomic composition of our samples. We will start by training a taxonomic classifier. I won't dive into how this works, but you can read all about it [here](https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-018-0470-z). There are several existing, pre-trained classifiers that exist for QIIME2, but the developers recommend training your own classifier, as they perform best when tailored to your specific data.
 
-We'll follow the documentation [here](https://docs.qiime2.org/2022.2/tutorials/feature-classifier/) to train our classifier. We'll use the Greengenes 13_8 85% OTU dataset -- as they state in the documentation **this dataset is not recommended for real data** -- we are using it here for the sake of time efficiency.
+We'll mostly follow the documentation [here](https://docs.qiime2.org/2022.2/tutorials/feature-classifier/) to train our classifier. However, instead of using the reference dataset they use, we'll use the Silva dataset. Both Silva and GreenGenes datasets are downloaded on WildIris as documented [here](https://arccwiki.atlassian.net/wiki/spaces/DOCUMENTAT/pages/107151729/Qiime2#Data-Resources). As described there, the environment variable `QIIME_DATA_RESOURCES` points to the location of the taxonomic datasets.
 
-
-Start by creating a new directory, moving into it, and then downloading the data that we will use to train the classifier.
-
-```bash
-mkdir training-feature-classifiers
-cd training-feature-classifiers
-wget \
-  -O "85_otus.fasta" \
-  "https://data.qiime2.org/2022.2/tutorials/training-feature-classifiers/85_otus.fasta"
-
-wget \
-  -O "85_otu_taxonomy.txt" \
-  "https://data.qiime2.org/2022.2/tutorials/training-feature-classifiers/85_otu_taxonomy.txt"
-```
-
-If that all ran successfully, you should now have three files in your current directory, a fasta, txt, and qza file.
+We will use sequence and taxonomy files that have already been imported into Qiime2 format as `.qza` files, however, we still need to extract the reads from the reference sequences to match our data. Here we use the same primers that were used to generate the data and set some min & max length parameters to exclude amplicons that are too short or long. We won't truncate the reads to a specific length because we have paired end data, and the merged reads end up as variable lengths.
 
 
-Then we need to import these data as QIIME artifact files.
-
-```bash
-qiime tools import \
-  --type 'FeatureData[Sequence]' \
-  --input-path 85_otus.fasta \
-  --output-path 85_otus.qza
-
-qiime tools import \
-  --type 'FeatureData[Taxonomy]' \
-  --input-format HeaderlessTSVTaxonomyFormat \
-  --input-path 85_otu_taxonomy.txt \
-  --output-path ref-taxonomy.qza
-```
-
-Next up, we'll extract the reads from the reference sequences to match our data. Here we use the same primers that were used to generate the data and set some min & max length parameters to exclude amplicons that are too short or long. We won't truncate the reads to a specific length because we have paired end data, and the merged reads end up as variable lengths.
-
+This will take a while (and is a good candidate for a slurm script!):
 
 ```bash
 qiime feature-classifier extract-reads \
-  --i-sequences 85_otus.qza \
+  --i-sequences $QIIME_DATA_RESOURCES/silva-138-99-seqs.qza \
   --p-f-primer GTGCCAGCMGCCGCGGTAA \
   --p-r-primer GGACTACHVGGGTWTCTAAT \
   --p-min-length 100 \
@@ -632,16 +623,51 @@ qiime feature-classifier extract-reads \
 ```
 
 
-Then we can run the Naive Bayes classifier.
+* This will vary if you want to use a different taxonomic dataset or if you use different PCR primers.
+
+
+Then we can run the Naive Bayes classifier. This I will run in a script because it uses more memory than my `salloc` session has allocated and takes quite a while (about an hour for me).
+
+Create a script called `train_class.slurm` in the `scripts` directory:
 
 ```bash
+#!/bin/bash
+
+#SBATCH --job-name train_class   # give the job a name
+#SBATCH -A YOURPROJECT    # specify the account
+#SBATCH -t 0-01:00		 # how much time? this is 1 hour
+#SBATCH --nodes=1			# how many nodes?
+#SBATCH --cpus-per-task=1	# 1 cores
+#SBATCH --mem=24G			# 10 GB memory
+#SBATCH --mail-type=ALL		# Send emails on start, fail, completion
+#SBATCH --mail-user=USERNAME@gmail.com   # specify your email
+#SBATCH -e errs_outs/err_train_%A.err		# name error files and include job ID (%A)
+#SBATCH -o errs_outs/std_train_%A.out		# name  out files and include job ID (%A)
+
+# Load any necessary modules 
+module load qiime2/2023.5
+
+# set the working directory as appropriate
+cd YOUR_PATH_TO/qiime_tutorial/ # Edit this to your path
+
+# Train the classifier:
+
 qiime feature-classifier fit-classifier-naive-bayes \
   --i-reference-reads ref-seqs.qza \
-  --i-reference-taxonomy ref-taxonomy.qza \
+  --i-reference-taxonomy $QIIME_DATA_RESOURCES/silva-138-99-tax.qza \
   --o-classifier classifier.qza
 ```
 
-This has trained the classifier on the reference data. Now we can run the classifier on our data to determine what taxa are present in our samples. Then we can make a visualization of this.
+* Note that the `reference-taxonomy` argument has to match the sequences used
+
+Run the script:
+
+```bash
+sbatch train_class.slurm
+```
+
+
+This will train the classifier on the reference data. When that completes, we can run the classifier on our data to determine what taxa are present in our samples. Then we can make a visualization of this
 
 
 ```bash
@@ -787,6 +813,10 @@ QIIME2 also includes another method for differential abundance analysis, called 
 
 
 <br><br><br>
+
+
+SOMEWHWERE make a note that file organization isn't great here
+
 
 ## 7. Some other useful approaches
 
