@@ -34,7 +34,7 @@ This tutorial is designed for users wanting to run Qiime2 on the INBRE WildIris 
 
 * I will assume some basic knowledge of WildIris, including how to log on, what a job is, etc. If you need a refresher, these concepts are covered in my [Intro to bash and the WildIris cluster](https://github.com/seanharrington256/WildIris_tutorial) tutorial.
 
-This is a modification of a general tutorial I put together [here](https://github.com/seanharrington256/boise_qiime_2022) that is not specific to WildIris.
+This QIIME2 tutorial is a modification of a general tutorial I put together [here](https://github.com/seanharrington256/boise_qiime_2022) that is not specific to WildIris.
 
 <br><br><br>
 <br><br><br>
@@ -47,9 +47,9 @@ The greatest advantage of QIIME2 is that it aggregates various tools into a sing
 Another advantage of QIIME2 is that the files track the provenance of the data--i.e., QIIME2 tracks exactly how the data has been processed at every step up to any given analysis. We will explore this further as we start looking at QIIME2 files.
 
 
-Today, we will use QIIME2 to explore soil microbiome data from the Atacama desert in Chile. The data are presented in [this paper](https://journals.asm.org/doi/full/10.1128/mSystems.00195-16).
+We will use QIIME2 to explore soil microbiome data from the Atacama desert in Chile. The data are presented in [this paper](https://journals.asm.org/doi/full/10.1128/mSystems.00195-16).
 
-This tutorial is adapted from the following tutorials in the QIIME2 documentation: [“Atacama soil microbiome” tutorial](https://docs.qiime2.org/2022.2/tutorials/atacama-soils/), [“Moving Pictures” tutorial](https://docs.qiime2.org/2022.2/tutorials/moving-pictures/), [Training feature classifiers](https://docs.qiime2.org/2022.2/tutorials/feature-classifier/). The QIIME2 documentation is extensive and features several tutorials. More detail on all of the concepts that we will cover today can be found in this documentation. 
+This tutorial is adapted from the following tutorials in the QIIME2 documentation: [“Atacama soil microbiome” tutorial](https://docs.qiime2.org/2022.2/tutorials/atacama-soils/), [“Moving Pictures” tutorial](https://docs.qiime2.org/2022.2/tutorials/moving-pictures/), [Training feature classifiers](https://docs.qiime2.org/2022.2/tutorials/feature-classifier/). The QIIME2 documentation is extensive and features several tutorials. More detail on all of the concepts that I will cover can be found in this documentation. 
 
 Blocks of code to be entered into your command line terminal will look like this:
 
@@ -97,12 +97,14 @@ module load qiime2/2023.5
 
 If we type `qiime`, we should get some basic info on the currently installed plugins and available commands (after some caching the first time).
 
-Note that we will only want to run these commands to process data from within a SLURM script or an interactive `salloc` session, not on the login node that we are currently on. If you are not sure what I mean by this, review my WildIris intro tutorial linked in the Introduction section above. We'll see that as we start to work with data. First, we need to download data.
+Note that we will only want to run these commands to process data from within a SLURM script or an interactive `salloc` session, not on the login node that we are currently on. If you are not sure what I mean by this, review my WildIris intro tutorial linked in the Introduction section above. First, we need to download data.
 
 
 In whatever project you use on WildIris, I recommend making a directory called `qiime_tutorial`. 
 
-`mkdir qiime_tutorial`
+```
+mkdir qiime_tutorial
+```
 
 Your path to this directory will be different than mine, so keep track of where you've created this. Move into that directory, and then create two more directories, one for scripts, and one for raw data. This is how I typically organize my research projects, and then I put outputs into other directories.
 
@@ -136,7 +138,7 @@ wget \
 
 Note that the slashes are just escaping line endings so that `wget` commands are interpreted as a single-line commands while allowing them to easily fit on this page.
 
-We should now have the sample metadata, raw reads, and barcodes for the samples.
+You should now have the sample metadata, raw reads, and barcodes for the samples.
 
 Take a look at the sample metadata in the `sample_metadata.tsv` file to get familiar with what we're working with here. We have a mixture of categorical variables, such as site-name, and continuous variables, such as elevation.
 
@@ -146,7 +148,7 @@ Take a look at the sample metadata in the `sample_metadata.tsv` file to get fami
 
 ## 3. Read and process the data
 
-Now we can import the data and prepare it for analysis in QIIME2. As touched on above, QIIME2 puts things into its own file format, and so the first step is to read the raw data into QIIME2 format.
+Now we can import the data and prepare it for analysis in QIIME2. As I touched on above, QIIME2 puts things into its own file format, and so the first step is to read the raw data into QIIME2 format.
 
 * As mentioned above, you will need to run QIIME2 from within an interactive session or by submitting jobs with a SLURM script. I'll demonstrate both here for the data import step, but then will mostly run through these steps in an interactive session, with exceptions for longer steps. 
 
@@ -154,7 +156,7 @@ Now we can import the data and prepare it for analysis in QIIME2. As touched on 
 salloc -A YOURPROJECT -t 0-03:00 --mem=10G --cpus-per-task=2
 ```
 
-* Note that running `salloc` sessions and typing commands directly into the console can be convenient for small datasets, but you should be keeping a record of the commands you type somewhere. A huge advantage of using slurm scripts, even for short jobs is that you have a file that records the exact commmands you ran. In my own analyses, I use slurm scripts for all but the shortest, simplest tasks.
+* Note that running `salloc` sessions and typing commands directly into the console can be convenient for small datasets, but you should be keeping a record of the commands you type somewhere. A huge advantage of using slurm scripts, even for short jobs, is that you have a file that records the exact commmands you ran. In my own analyses, I use slurm scripts for all but the shortest, simplest tasks.
 
 * The `-A` option in the `salloc` command or in slurm scripts specifies which project to use, you will need your own project for this.
 
@@ -173,7 +175,7 @@ qiime tools import \
 
 This creates a QIIME2 file called an artifact. QIIME2 uses two file formats, "QIIME zipped artifacts" or ".qza" files and "QIIME zipped visualizations" or ".qzv" files. Both are just zip files with different names. qza files contain data and provenance (information about what has been done to the data) while qzv files, which we'll see shortly, contain visualizations, as the name suggests.
 
-Because of the way that I have specified the output path, this file will be created in the `qiime_tutorial` directory, one level above where we are now. This keeps up from confusing our outputs with our raw data.
+Because of the way that I have specified the output path, this file will be created in the `qiime_tutorial` directory, one level above where we are now. This keeps us from confusing our outputs with our raw data.
 
 
 <br>
@@ -433,7 +435,7 @@ qiime diversity core-metrics-phylogenetic \
   --output-dir core-metrics-results
 ```
 
-**Note that the 689 I used here may not be exactly what you want to use.** When we subsampled reads at the beginning to reduce computation time, we did so randomly, so everyone will have slightly different datasets containing different reads. This will affect any specific values used throughout this tutorial.
+* **Note that the 689 I used here may not be exactly what you want to use.** When we subsampled reads at the beginning to reduce computation time, we did so randomly, so everyone will have slightly different datasets containing different reads. This will affect any specific values used throughout this tutorial.
 
 This generates a lot of output that is worth looking through, take a look at all of the artifacts and visualizations that were created: `ls core-metrics-results`.
 
@@ -806,9 +808,29 @@ QIIME2 also includes another method for differential abundance analysis, called 
 
 As stated above, I ran through most of this tutorial showing commands as they would be entered into the command line in an interactive session. This is mostly to be able to show individual commands and document them without lumping too many together or cluttering everything up with loads of slurm script headers. We also just dumped most of our outputs directly into the main `qiime_tutorial` directory, which is not very organized.
 
-When working with my own data, I would instead script everything, 
+When working with my own data, I would instead script everything and put output into its own directory. To demonstrate this, I've gone through this whole tutorial again using scripts. I created a new directory called `qiime_all_scripts`. In this directory, I have 3 directories: 1) `scripts`, 2) `raw_data`, and 3) `output`. 
+
+The scripts that I used for this processing can all be found in this Github repository [here](https://github.com/seanharrington256/WildIris_Qiime2/tree/master/slurm_scripts).
+
+* In each of these, I've left my account and file paths, you'll need to change these to your own to make them work.
+
+Here is a brief description of each script:
+
+1. `01_imp_demux.slurm`: import and demultiplex data, also add in the subsampling steps **Reminder that you typically do not want to subsample your own data!!**
+
+2. `02_filt_denoise.slurm`: filter out samples with few reads, denoise the data and make some summaries
+
+3. `03_phylo_div.slurm`: Calculate all diversity metrics from section 4 of this tutorial. Chaining together this many commands can be a pain sometimes if a command halfway through the script fails. In this case, you can identify where the failure is from the `.err` and `.out` files and then run only the portion of the script that failed (once correcting it) by commenting out the first part, or you could split the script into two or more.
 
 
+
+
+
+None of these steps or commands are new, they're just condensed into some slurm scripts now. 
+
+
+
+<br><br><br>
 
 
 ## 8. Some other useful approaches
