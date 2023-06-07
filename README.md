@@ -18,7 +18,8 @@
 	- [4.3 Alpha rarefaction](#alpha-rarefaction)
 - [5. Taxonomic analysis](#taxonomic-analysis)
 - [6. Differential abundance testing with ANCOM](#differential-abundance-testing-with-ancom)
-- [7. Some other useful approaches](#some-other-useful-approaches)
+- [7. Scripting and organization](#scripting-and-organization)
+- [8. Some other useful approaches](#some-other-useful-approaches)
 
 
 
@@ -671,10 +672,8 @@ This will train the classifier on the reference data. When that completes, we ca
 
 
 ```bash
-cd ..  # We first need to move up one level to get out of the classifier directory
-
 qiime feature-classifier classify-sklearn \
-  --i-classifier training-feature-classifiers/classifier.qza \
+  --i-classifier classifier.qza \
   --i-reads rep-seqs.qza \
   --o-classification taxonomy.qza
 
@@ -684,30 +683,29 @@ qiime metadata tabulate \
 ```
 
 
-Let's take a look.
+Take a look at that file: `taxonomy.qzv`
+
+<center>
+<img src="images/feature_tax_table.png" width=600 />
+</center>
 
 
-```bash
-qiime tools view taxonomy.qzv
-```
-
-This is useful information, but doesn't tell us much at a glance, so let's make some bar plots:
+This tells us what taxon each feature is identified as, but doesn't tell us much at a glance, so let's make some bar plots:
 
 ```bash
 qiime taxa barplot \
   --i-table table.qza \
   --i-taxonomy taxonomy.qza \
-  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --o-visualization taxa-bar-plots.qzv
-
-
-qiime tools view taxa-bar-plots.qzv
 ```
+
+Then view the resulting `taxa-bar-plots.qzv`
 
 We can now explore the taxonomic composition of the samples at various taxonomic levels and grouping by the different metadata categories.
 
 
-Set the `Taxonomic level` to *Level 2* (corresponding to phyla) and then `Sort Samples By` *vegetation*. Are there any noticeable differences in the phyla that are represented by samples from each of the vegetation categories?
+Set the `Taxonomic level` to *Level 2* (corresponding to phyla) and then `Sort Samples By` *ph*. Do you see any trends in phyla that seem to be associated with high vs. low ph?
 
 
 <center>
@@ -739,16 +737,13 @@ Then we'll run ANCOM on the `vegetation` column to see if we have any significan
 ```bash
 qiime composition ancom \
   --i-table comp-table.qza \
-  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --m-metadata-column vegetation \
   --o-visualization ancom-vegetation.qzv
 ```
 
-Visualize this:
+Visualize this file: `ancom-vegetation.qzv`
 
-```bash
-qiime tools view ancom-vegetation.qzv
-```
 
 This shows us individual features that are differentially abundant across vegetation categories. We may instead or additionally be interested in how certain taxa at a given taxonomic level differ across groups.
 
@@ -767,17 +762,13 @@ qiime composition add-pseudocount \
 
 qiime composition ancom \
   --i-table comp-table-l6.qza \
-  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --m-metadata-column vegetation \
   --o-visualization l6-ancom-vegetation.qzv
 ```
 
-Take a look.
+Take a look at the visualization `l6-ancom-vegetation.qzv`
 
-
-```bash
-qiime tools view l6-ancom-vegetation.qzv
-```
 
 
 We can also do the same for phyla:
@@ -795,14 +786,12 @@ qiime composition add-pseudocount \
 
 qiime composition ancom \
   --i-table comp-table-l2.qza \
-  --m-metadata-file sample-metadata.tsv \
+  --m-metadata-file raw_data/sample-metadata.tsv \
   --m-metadata-column vegetation \
   --o-visualization l2-ancom-vegetation.qzv
-  
-  
-  
-qiime tools view l2-ancom-vegetation.qzv
 ```
+
+And then view the `l2-ancom-vegetation.qzv` file
 
 
 What phyla differ among the vegetated and non-vegetated sites?
@@ -815,10 +804,12 @@ QIIME2 also includes another method for differential abundance analysis, called 
 <br><br><br>
 
 
-SOMEWHWERE make a note that file organization isn't great here
+
+## 7. Scripting and organization
 
 
-## 7. Some other useful approaches
+
+## 8. Some other useful approaches
 
 QIIME2 is only one pipeline for microbiome analysis. You could alternately do all of these steps using command line tools without using QIIME2 at all or even in R. R can make some really fancy figures, so even if you do most of your data processing and analysis in QIIME2, you may want to export your data from QIIME2 ([see here for documentation](https://docs.qiime2.org/2022.2/tutorials/exporting/)) to run some analyses and make nice graphics for publication.
 
