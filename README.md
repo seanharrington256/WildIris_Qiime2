@@ -1,9 +1,6 @@
 # Analysis of metabarcoding data with QIIME2 on WildIris
 
 
-## CURRENTLY UNDER DEVELOPMENT!!
-
-
 ## Table of Contents
 
 
@@ -807,11 +804,16 @@ QIIME2 also includes another method for differential abundance analysis, called 
 
 ## 7. Scripting and organization
 
+As stated above, I ran through most of this tutorial showing commands as they would be entered into the command line in an interactive session. This is mostly to be able to show individual commands and document them without lumping too many together or cluttering everything up with loads of slurm script headers. We also just dumped most of our outputs directly into the main `qiime_tutorial` directory, which is not very organized.
+
+When working with my own data, I would instead script everything, 
+
+
 
 
 ## 8. Some other useful approaches
 
-QIIME2 is only one pipeline for microbiome analysis. You could alternately do all of these steps using command line tools without using QIIME2 at all or even in R. R can make some really fancy figures, so even if you do most of your data processing and analysis in QIIME2, you may want to export your data from QIIME2 ([see here for documentation](https://docs.qiime2.org/2022.2/tutorials/exporting/)) to run some analyses and make nice graphics for publication.
+QIIME2 is only one pipeline for microbiome analysis. You could alternately do all of these steps using command line tools or even in R without using QIIME2 at all. R can make some really fancy figures, so even if you do most of your data processing and analysis in QIIME2, you may want to export your data from QIIME2 ([see here for documentation](https://docs.qiime2.org/2022.2/tutorials/exporting/)) to run some analyses and make nice graphics for publication.
 
 
 Here are a few tutorials for microbiome analysis in R:
