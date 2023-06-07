@@ -7,7 +7,7 @@
 - [1. Introduction](#1-introduction)
 - [2. Setup](#2-setup)
 - [3. Read and process the data](#3-read-and-process-the-data)
-	- [3.1 Demultiplexing](#3.1-demultiplexing)
+	- [3.1 Demultiplexing](#31-demultiplexing)
 	- [3.2 Denoising](#3-2-denoising)
 - [4. Phylogenetic diversity analyses](#4-phylogenetic-diversity-analyses)
 	- [4.1 Categorical tests](#4-1-categorical-tests)
