@@ -5,18 +5,18 @@
 
 
 - [1. Introduction](#1-introduction)
-- [2. Setup](#setup)
-- [3. Read and process the data](#read-and-process-the-data)
-	- [3.1 Demultiplexing](#demultiplexing)
-	- [3.2 Denoising](#denoising)
-- [4. Phylogenetic diversity analyses](#phylogenetic-diversity-analyses)
-	- [4.1 Categorical tests](#categorical-tests)
-	- [4.2 Continuous tests](#continuous-tests)
-	- [4.3 Alpha rarefaction](#alpha-rarefaction)
-- [5. Taxonomic analysis](#taxonomic-analysis)
-- [6. Differential abundance testing with ANCOM](#differential-abundance-testing-with-ancom)
-- [7. Scripting and organization](#scripting-and-organization)
-- [8. Some other useful approaches](#some-other-useful-approaches)
+- [2. Setup](#2-setup)
+- [3. Read and process the data](#3-read-and-process-the-data)
+	- [3.1 Demultiplexing](#3-1-demultiplexing)
+	- [3.2 Denoising](#3-2-denoising)
+- [4. Phylogenetic diversity analyses](#4-phylogenetic-diversity-analyses)
+	- [4.1 Categorical tests](#4-1-categorical-tests)
+	- [4.2 Continuous tests](#4-2-continuous-tests)
+	- [4.3 Alpha rarefaction](#4-3-alpha-rarefaction)
+- [5. Taxonomic analysis](#5-taxonomic-analysis)
+- [6. Differential abundance testing with ANCOM](#6-differential-abundance-testing-with-ancom)
+- [7. Scripting and organization](#7-scripting-and-organization)
+- [8. Some other useful approaches](#8-some-other-useful-approaches)
 
 
 
