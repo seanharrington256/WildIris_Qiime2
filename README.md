@@ -4,7 +4,7 @@
 ## Table of Contents
 
 
-- [Introduction](#introduction)
+- [1. Introduction](#1-introduction)
 - [2. Setup](#setup)
 - [3. Read and process the data](#read-and-process-the-data)
 	- [3.1 Demultiplexing](#demultiplexing)
@@ -28,7 +28,7 @@
 </center>
 <br><br><br>
 
-## Introduction
+## 1. Introduction
 
 This tutorial is designed for users wanting to run Qiime2 on the INBRE WildIris high-performance computing (HPC) cluster that is hosted at the University of Wyoming (UW). This cluster is specifically implemented to support users outside of UW and does not require UW credentials/email for access. Hardware for this cluster was purchased with INBRE funds.
 
