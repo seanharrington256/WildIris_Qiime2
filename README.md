@@ -225,6 +225,8 @@ Submit the job:
 sbatch import.slurm
 ```
 
+* To see how I would run this entire tutorial using only slurm scripts, see [Section 7](https://github.com/seanharrington256/WildIris_Qiime2#7-scripting-and-organization)
+
 
 <br><br>
 
@@ -640,7 +642,7 @@ Create a script called `train_class.slurm` in the `scripts` directory:
 #SBATCH -t 0-01:00		 # how much time? this is 1 hour
 #SBATCH --nodes=1			# how many nodes?
 #SBATCH --cpus-per-task=1	# 1 cores
-#SBATCH --mem=24G			# 10 GB memory
+#SBATCH --mem=24G			# 24 GB memory
 #SBATCH --mail-type=ALL		# Send emails on start, fail, completion
 #SBATCH --mail-user=USERNAME@gmail.com   # specify your email
 #SBATCH -e errs_outs/err_train_%A.err		# name error files and include job ID (%A)
@@ -812,13 +814,14 @@ As stated above, I ran through most of this tutorial showing commands as they wo
 
 When working with my own data, I would instead script everything and put output into its own directory. To demonstrate this, I've gone through this whole tutorial again using scripts. I created a new directory called `qiime_all_scripts`. In this directory, I have 3 directories: 1) `scripts`, 2) `raw_data`, and 3) `output`. 
 
-The scripts that I used for this processing can all be found in this Github repository [here](https://github.com/seanharrington256/WildIris_Qiime2/tree/master/slurm_scripts).
+The scripts that I used for this processing can all be found in this Github repository at the rop in the [slurm_scripts directory](https://github.com/seanharrington256/WildIris_Qiime2/tree/master/slurm_scripts).
 
 * **In each of these, I've left my account (inbreh) and file paths, you'll need to change these to your own to make them work.**
 
 Here is a brief description of each script:
 
-1. `01_imp_demux.slurm`: import and demultiplex data, also add in the subsampling steps **Reminder that you typically do not want to subsample your own data!!**
+1. `01_imp_demux.slurm`: import and demultiplex data, also add in the subsampling steps
+**Reminder: you typically do not want to subsample your own data!!**
 
 2. `02_filt_denoise.slurm`: filter out samples with few reads, denoise the data and make some summaries
 
@@ -827,6 +830,7 @@ Here is a brief description of each script:
 
 4. `04_tax_ana.slurm`: Train a taxonomic classifier, classify our data, make a barplot.
 
+5. `05_diff_abund.slurm`: Differential abundance testing.
 
 
 None of these steps or commands are new, they're just condensed into some slurm scripts now. 
