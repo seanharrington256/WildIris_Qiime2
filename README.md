@@ -180,15 +180,10 @@ Because of the way that I have specified the output path, this file will be crea
 
 <br>
 
-Alternately, submitting this as a batch job can be done by writing a slurm script, which I've titled `import.slurm`:
+Alternately, submitting this as a batch job can be done by writing a slurm script. If using this method, create a script called `import.slurm` in your `scripts` directory. You can create this using `vim`, `nano`, or using CyberDuck or a similar program to interface with a text editor.
 
-I would first move into my scripts directory and create this script there. 
+In that script, put the following, changing the project and email to your own:
 
-```bash
-cd ../scripts
-```
-
-Then create this script there, however you prefer (`vim`, `nano`, using a text editor with CyberDuck).
 
 ```bash
 #!/bin/bash
@@ -217,9 +212,11 @@ qiime tools import \
    --output-path ../emp-paired-end-sequences.qza
 ```
 
+* After the slurm header, the commands in the slurm script are identical to what we would type into the command line in an interactive session
+
 * You could include multiple steps into a single script if desired.
 
-Submit the job:
+Submit the job from within your `scripts` directory:
 
 ```bash
 sbatch import.slurm
@@ -814,7 +811,7 @@ As stated above, I ran through most of this tutorial showing commands as they wo
 
 When working with my own data, I would instead script everything and put output into its own directory. To demonstrate this, I've gone through this whole tutorial again using scripts. I created a new directory called `qiime_all_scripts`. In this directory, I have 3 directories: 1) `scripts`, 2) `raw_data`, and 3) `output`. 
 
-The scripts that I used for this processing can all be found in this Github repository at the rop in the [slurm_scripts directory](https://github.com/seanharrington256/WildIris_Qiime2/tree/master/slurm_scripts).
+The scripts that I used for this processing can all be found in this Github repository at the top in the [slurm_scripts directory](https://github.com/seanharrington256/WildIris_Qiime2/tree/master/slurm_scripts).
 
 * **In each of these, I've left my account (inbreh) and file paths, you'll need to change these to your own to make them work.**
 
