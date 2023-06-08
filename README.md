@@ -625,6 +625,8 @@ qiime feature-classifier extract-reads \
 
 * This will vary if you want to use a different taxonomic dataset or if you use different PCR primers.
 
+* This only needs to be done once for data generated using a given primer set and read length. If you use the same protocol to generate more data, you can use the same classifier. 
+
 
 Then we can run the Naive Bayes classifier. This I will run in a script because it uses more memory than my `salloc` session has allocated and takes quite a while (about an hour for me).
 
@@ -812,7 +814,7 @@ When working with my own data, I would instead script everything and put output 
 
 The scripts that I used for this processing can all be found in this Github repository [here](https://github.com/seanharrington256/WildIris_Qiime2/tree/master/slurm_scripts).
 
-* In each of these, I've left my account and file paths, you'll need to change these to your own to make them work.
+* **In each of these, I've left my account (inbreh) and file paths, you'll need to change these to your own to make them work.**
 
 Here is a brief description of each script:
 
@@ -823,6 +825,7 @@ Here is a brief description of each script:
 3. `03_phylo_div.slurm`: Calculate all diversity metrics from section 4 of this tutorial. Chaining together this many commands can be a pain sometimes if a command halfway through the script fails. In this case, you can identify where the failure is from the `.err` and `.out` files and then run only the portion of the script that failed (once correcting it) by commenting out the first part, or you could split the script into two or more.
 
 
+4. `04_tax_ana.slurm`: Train a taxonomic classifier, classify our data, make a barplot.
 
 
 
